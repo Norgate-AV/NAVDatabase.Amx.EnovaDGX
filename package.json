@@ -1,7 +1,6 @@
 {
-    "name": "NAVDatabase.Amx.EnovaDGX",
+    "name": "NAVDatabase.Amx.SolecisSwitcher",
     "version": "1.0.0",
-    "private": true,
     "keywords": [
         "amx",
         "netlinx",
@@ -11,10 +10,10 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/Norgate-AV/NAVDatabase.Amx.EnovaDGX.git"
+        "url": "https://github.com/Norgate-AV/NAVDatabase.Amx.SolecisSwitcher.git"
     },
     "bugs": {
-        "url": "https://github.com/Norgate-AV/NAVDatabase.Amx.EnovaDGX/issues"
+        "url": "https://github.com/Norgate-AV/NAVDatabase.Amx.SolecisSwitcher/issues"
     },
     "engines": {
         "node": ">=14"
@@ -32,16 +31,16 @@
         "analyze": "size-limit --why"
     },
     "devDependencies": {
-        "@commitlint/cli": "^17.4.4",
-        "@commitlint/config-conventional": "^17.4.4",
-        "@norgate-av/genlinx": "^1.0.0",
-        "all-contributors-cli": "^6.24.0",
-        "commitizen": "^4.3.0",
+        "@commitlint/cli": "^19.5.0",
+        "@commitlint/config-conventional": "^19.5.0",
+        "@norgate-av/genlinx": "^2.5.0",
+        "all-contributors-cli": "^6.26.1",
+        "commitizen": "^4.3.1",
         "cz-conventional-changelog": "3.3.0",
         "doctoc": "^2.2.1",
-        "husky": "^8.0.3",
-        "lint-staged": "^14.0.1",
-        "prettier": "^3.0.3",
-        "size-limit": "^9.0.0"
+        "husky": "^9.1.6",
+        "lint-staged": "^15.2.10",
+        "prettier": "^3.3.3",
+        "size-limit": "^11.1.5"
     }
 }
