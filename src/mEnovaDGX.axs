@@ -97,7 +97,7 @@ DEFINE_MUTUALLY_EXCLUSIVE
 (* EXAMPLE: DEFINE_FUNCTION <RETURN_TYPE> <NAME> (<PARAMETERS>) *)
 (* EXAMPLE: DEFINE_CALL '<NAME>' (<PARAMETERS>) *)
 define_function Send(char cParam[]) {
-    NAVLog("'Command To ', NAVConvertDPSToAscii(dvDevice[1]), '-[', cParam, ']'")
+    NAVErrorLog(NAV_LOG_LEVEL_DEBUG, "'Command To ', NAVConvertDPSToAscii(dvDevice[1]), '-[', cParam, ']'")
     NAVCommand(dvDevice[1], "cParam")
     wait 1 iCommandBusy = false
 }
@@ -144,7 +144,7 @@ data_event[dvDevice] {
     command: {
         [vdvObject, DEVICE_COMMUNICATING] = true
         [vdvObject, DATA_INITIALIZED] = true
-        NAVLog(NAVFormatStandardLogMessage(NAV_STANDARD_LOG_MESSAGE_TYPE_COMMAND_FROM, data.device, data.text))
+        NAVErrorLog(NAV_LOG_LEVEL_DEBUG, NAVFormatStandardLogMessage(NAV_STANDARD_LOG_MESSAGE_TYPE_COMMAND_FROM, data.device, data.text))
     }
 }
 
@@ -158,7 +158,7 @@ data_event[vdvObject] {
         stack_var char cCmdHeader[NAV_MAX_CHARS]
         stack_var char cCmdParam[3][NAV_MAX_CHARS]
 
-        NAVLog(NAVFormatStandardLogMessage(NAV_STANDARD_LOG_MESSAGE_TYPE_COMMAND_FROM, data.device, data.text))
+        NAVErrorLog(NAV_LOG_LEVEL_DEBUG, NAVFormatStandardLogMessage(NAV_STANDARD_LOG_MESSAGE_TYPE_COMMAND_FROM, data.device, data.text))
 
         cCmdHeader = DuetParseCmdHeader(data.text)
         cCmdParam[1] = DuetParseCmdParam(data.text)
