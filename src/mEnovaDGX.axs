@@ -49,6 +49,7 @@ DEFINE_DEVICE
 DEFINE_CONSTANT
 
 constant long TL_DRIVE	= 1
+constant long TL_DRIVE_INTERVAL[] = { 200 }
 
 constant integer MAX_SWITCH_LEVEL = 3
 constant char SWITCH_LEVEL[][NAV_MAX_CHARS] =   {
@@ -74,8 +75,6 @@ DEFINE_TYPE
 (***********************************************************)
 DEFINE_VARIABLE
 
-volatile long ltDrive[] = { 200 }
-
 volatile integer iCommandBusy
 
 volatile integer iOutput[MAX_SWITCH_LEVEL][MAX_OUTPUT]
@@ -96,8 +95,8 @@ DEFINE_MUTUALLY_EXCLUSIVE
 (***********************************************************)
 (* EXAMPLE: DEFINE_FUNCTION <RETURN_TYPE> <NAME> (<PARAMETERS>) *)
 (* EXAMPLE: DEFINE_CALL '<NAME>' (<PARAMETERS>) *)
+
 define_function Send(char cParam[]) {
-    NAVErrorLog(NAV_LOG_LEVEL_DEBUG, "'Command To ', NAVConvertDPSToAscii(dvDevice[1]), '-[', cParam, ']'")
     NAVCommand(dvDevice[1], "cParam")
     wait 1 iCommandBusy = false
 }
@@ -130,7 +129,7 @@ define_function Drive() {
 (*                STARTUP CODE GOES BELOW                  *)
 (***********************************************************)
 DEFINE_START {
-    NAVTimelineStart(TL_DRIVE, ltDrive, TIMELINE_ABSOLUTE, TIMELINE_REPEAT)
+    NAVTimelineStart(TL_DRIVE, TL_DRIVE_INTERVAL, TIMELINE_ABSOLUTE, TIMELINE_REPEAT)
 }
 
 (***********************************************************)
@@ -144,7 +143,6 @@ data_event[dvDevice] {
     command: {
         [vdvObject, DEVICE_COMMUNICATING] = true
         [vdvObject, DATA_INITIALIZED] = true
-        NAVErrorLog(NAV_LOG_LEVEL_DEBUG, NAVFormatStandardLogMessage(NAV_STANDARD_LOG_MESSAGE_TYPE_COMMAND_FROM, data.device, data.text))
     }
 }
 
@@ -157,8 +155,6 @@ data_event[vdvObject] {
     command: {
         stack_var char cCmdHeader[NAV_MAX_CHARS]
         stack_var char cCmdParam[3][NAV_MAX_CHARS]
-
-        NAVErrorLog(NAV_LOG_LEVEL_DEBUG, NAVFormatStandardLogMessage(NAV_STANDARD_LOG_MESSAGE_TYPE_COMMAND_FROM, data.device, data.text))
 
         cCmdHeader = DuetParseCmdHeader(data.text)
         cCmdParam[1] = DuetParseCmdParam(data.text)
@@ -186,7 +182,6 @@ timeline_event[TL_DRIVE] { Drive() }
 
 
 level_event[dvDevice, FEEDBACK_LEVELS] {
-    send_string 0, "'Output ', itoa(get_last(dvDevice)), ', Input ', itoa(level.value), ', ', NAV_SWITCH_LEVELS[get_last(FEEDBACK_LEVELS)]"
     send_string vdvObject, "'SWITCH-', itoa(level.value), ',', itoa(get_last(dvDevice)), ',', NAV_SWITCH_LEVELS[get_last(FEEDBACK_LEVELS)]"
 }
 
