@@ -4,8 +4,9 @@ MODULE_NAME='mEnovaDGX' 	(
                             )
 
 (***********************************************************)
-#include 'NAVFoundation.ModuleBase.axi'
+#include 'NAVFoundation.SnapiHelpers.axi'
 #include 'NAVFoundation.ArrayUtils.axi'
+#include 'NAVFoundation.TimelineUtils.axi'
 
 /*
  _   _                       _          ___     __
@@ -75,10 +76,10 @@ DEFINE_TYPE
 (***********************************************************)
 DEFINE_VARIABLE
 
-volatile integer iCommandBusy
+volatile integer commandBusy = false
 
-volatile integer iOutput[MAX_SWITCH_LEVEL][MAX_OUTPUT]
-volatile integer iPending[MAX_SWITCH_LEVEL][MAX_OUTPUT]
+volatile integer output[MAX_SWITCH_LEVEL][MAX_OUTPUT]
+volatile integer pending[MAX_SWITCH_LEVEL][MAX_OUTPUT]
 
 (***********************************************************)
 (*               LATCHING DEFINITIONS GO BELOW             *)
@@ -96,14 +97,14 @@ DEFINE_MUTUALLY_EXCLUSIVE
 (* EXAMPLE: DEFINE_FUNCTION <RETURN_TYPE> <NAME> (<PARAMETERS>) *)
 (* EXAMPLE: DEFINE_CALL '<NAME>' (<PARAMETERS>) *)
 
-define_function Send(char cParam[]) {
-    NAVCommand(dvDevice[1], "cParam")
-    wait 1 iCommandBusy = false
+define_function Send(char payload[]) {
+    NAVCommand(dvDevice[1], "payload")
+    wait 1 commandBusy = false
 }
 
 
-define_function char[NAV_MAX_CHARS] Build(integer iInput, integer iOutput, integer iLevel) {
-    return "'CL', SWITCH_LEVEL[iLevel], 'I', itoa(iInput), 'O', itoa(iOutput)"
+define_function char[NAV_MAX_CHARS] Build(integer input, integer output, integer level) {
+    return "'CL', SWITCH_LEVEL[level], 'I', itoa(input), 'O', itoa(output)"
 }
 
 
@@ -111,15 +112,19 @@ define_function Drive() {
     stack_var integer x
     stack_var integer i
 
-    if (!iCommandBusy) {
-        for (x = 1; x <= MAX_OUTPUT; x++) {
-            for (i = 1; i <= MAX_SWITCH_LEVEL; i++) {
-                if (iPending[i][x] && !iCommandBusy) {
-                    iPending[i][x] = false
-                    iCommandBusy = true
-                    Send(Build(iOutput[i][x], x, i))
-                }
+    if (commandBusy) {
+        return
+    }
+
+    for (x = 1; x <= MAX_OUTPUT; x++) {
+        for (i = 1; i <= MAX_SWITCH_LEVEL; i++) {
+            if (!pending[i][x] || commandBusy) {
+                continue
             }
+
+            pending[i][x] = false
+            commandBusy = true
+            Send(Build(output[i][x], x, i))
         }
     }
 }
@@ -129,7 +134,7 @@ define_function Drive() {
 (*                STARTUP CODE GOES BELOW                  *)
 (***********************************************************)
 DEFINE_START {
-    NAVTimelineStart(TL_DRIVE, TL_DRIVE_INTERVAL, TIMELINE_ABSOLUTE, TIMELINE_REPEAT)
+
 }
 
 (***********************************************************)
@@ -138,7 +143,13 @@ DEFINE_START {
 DEFINE_EVENT
 data_event[dvDevice] {
     online: {
-
+        NAVTimelineStart(TL_DRIVE,
+                        TL_DRIVE_INTERVAL,
+                        TIMELINE_ABSOLUTE,
+                        TIMELINE_REPEAT)
+    }
+    offline: {
+        NAVTimelineStop(TL_DRIVE)
     }
     command: {
         [vdvObject, DEVICE_COMMUNICATING] = true
@@ -153,25 +164,21 @@ data_event[vdvObject] {
         NAVCommand(data.device,"'PROPERTY-RMS_MONITOR_ASSET_PROPERTY,MONITOR_ASSET_MANUFACTURER_NAME,AMX'")
     }
     command: {
-        stack_var char cCmdHeader[NAV_MAX_CHARS]
-        stack_var char cCmdParam[3][NAV_MAX_CHARS]
+        stack_var _NAVSnapiMessage message
 
-        cCmdHeader = DuetParseCmdHeader(data.text)
-        cCmdParam[1] = DuetParseCmdParam(data.text)
-        cCmdParam[2] = DuetParseCmdParam(data.text)
-        cCmdParam[3] = DuetParseCmdParam(data.text)
+        NAVParseSnapiMessage(data.text, message)
 
-        switch (cCmdHeader) {
-            case 'PASSTHRU': { Send(cCmdParam[1]) }
+        switch (message.Header) {
+            case 'PASSTHRU': { Send(message.Parameter[1]) }
             case 'SWITCH': {
-                stack_var integer iLevel
+                stack_var integer level
 
-                iLevel = NAVFindInArrayString(NAV_SWITCH_LEVELS, cCmdParam[3])
+                level = NAVFindInArrayString(NAV_SWITCH_LEVELS, message.Parameter[3])
 
-                if (!iLevel) { iLevel = NAV_SWITCH_LEVEL_ALL }
+                if (!level) { level = NAV_SWITCH_LEVEL_ALL }
 
-                iOutput[iLevel][atoi(cCmdParam[2])] = atoi(cCmdParam[1])
-                iPending[iLevel][atoi(cCmdParam[2])] = true
+                output[level][atoi(message.Parameter[2])] = atoi(message.Parameter[1])
+                pending[level][atoi(message.Parameter[2])] = true
             }
         }
     }
